@@ -1,39 +1,39 @@
-function getSubscription({ eventRef, eventName, observer }) {
-  const observable$ = Rx.Observable.fromEvent(eventRef, eventName);
-  observable$.subscribe(observer);
-}
-
-function getEventAttached({
-  elementIdentifier,
-  selectorType,
-  eventName,
-  observer,
-}) {
-  var selectedElement;
-
-  switch (selectorType) {
-    case "id": {
-      selectedElement = document.getElementById(elementIdentifier);
-      break;
-    }
-
-    case "class": {
-      selectedElement = document.getElementById(elementIdentifier);
-      break;
-    }
+window.onload = function () {
+  function getSubscription({ eventRef, eventName, observer }) {
+    const observable$ = Rx.Observable.fromEvent(eventRef, eventName);
+    observable$.subscribe(observer);
   }
 
-  const subscriptionPayload = {
-    eventRef: selectedElement,
+  function getEventAttached({
+    elementIdentifier,
+    selectorType,
     eventName,
     observer,
-  };
+  }) {
+    var selectedElement;
 
-  getSubscription(subscriptionPayload);
-}
+    switch (selectorType) {
+      case "id": {
+        selectedElement = document.getElementById(elementIdentifier);
+        break;
+      }
 
-window.onload = function () {
-  const searchBar = document.getElementById("search");
+      case "class": {
+        selectedElement = document.getElementById(elementIdentifier);
+        break;
+      }
+    }
+
+    const subscriptionPayload = {
+      eventRef: selectedElement,
+      eventName,
+      observer,
+    };
+
+    getSubscription(subscriptionPayload);
+  }
+
+  var searchBar = document.getElementById("search");
   const defaultHostname = "https://www-latest.practo.com/";
   var hostname = defaultHostname;
   var suffix = "",
@@ -403,35 +403,27 @@ window.onload = function () {
     }
   });
 
-  if (addTag) {
-    const addTag$ = Rx.Observable.fromEvent(addTag, "click");
-
-    addTag$.subscribe(() => {
-      if (searchBar.value) {
-        tagBadge.insertAdjacentHTML(
-          "beforeend",
-          `<button disabled type="button" class="d-flex align-items-center btn btn-warning badge">
-            <div>${searchBar.value}</div>
-            </button>`
-        );
-        chrome.storage.sync.set({ savedSequenceNumber: sequenceNumber + 1 });
-        searchBar.value = "";
-        sequenceNumber += 1;
-        observer.next();
-      }
-    });
+  function addTagtoPrimarySearch() {
+    if (searchBar.value) {
+      tagBadge.insertAdjacentHTML(
+        "beforeend",
+        `<button disabled type="button" class="d-flex align-items-center btn btn-warning badge">
+                <div>${searchBar.value}</div>
+                </button>`
+      );
+      chrome.storage.sync.set({ savedSequenceNumber: sequenceNumber + 1 });
+      searchBar.value = "";
+      sequenceNumber += 1;
+      observer.next();
+    }
   }
 
-  // const clearAll = document.getElementById("clear-all");
-
-  // const clearAll$ = Rx.Observable.fromEvent(clearAll, "click");
-
-  // clearAll$.subscribe(() => {
-  //   chrome.storage.sync.set({ primarySearchTag: [] }, function () {
-  //     tagBadge.innerHTML = null;
-  //     observer.next();
-  //   });
-  // });
+  getEventAttached({
+    elementIdentifier: "addTag",
+    selectorType: "id",
+    eventName: "click",
+    observer: addTagtoPrimarySearch,
+  });
 
   function clearAllSubscriber() {
     chrome.storage.sync.set({ primarySearchTag: [] }, function () {
