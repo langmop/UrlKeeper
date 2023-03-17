@@ -33,11 +33,18 @@ window.onload = function () {
     getSubscription.call({ eventRef: selectedElement }, subscriptionPayload);
   }
 
+  function setDataInMemory ({ key, value, callback = () => {} }) {
+    chrome.storage.sync.set({ [key]: value }, callback);
+  }
+
+  function getDataFromMemory () {
+    
+  }
+
   var searchBar = document.getElementById("search");
   const defaultHostname = "https://www-latest.practo.com/";
   var hostname = defaultHostname;
-  var suffix = "",
-    openAllArray = [];
+  var suffix = "";
 
   var sequenceNumber;
 
@@ -73,7 +80,7 @@ window.onload = function () {
           });
         }
 
-        chrome.storage.sync.set({ primarySearchTag: searchingTags });
+        setDataInMemory({ key: "primarySearchTag", value: searchingTags });
 
         const options = {
           useExtendedSearch: true,
@@ -102,7 +109,7 @@ window.onload = function () {
         );
         seached_array.forEach((ele) => {
           const element = ele.item.name;
-          var p = document.getElementById("accordion"); // is a node
+          var p = document.getElementById("accordion");
           p.insertAdjacentHTML(
             "beforeend",
             `
@@ -253,9 +260,6 @@ window.onload = function () {
             linkList
               .slice((activePage - 1) * perPageUrls, activePage * perPageUrls)
               .forEach((url, index) => {
-                const isSelected = !!openAllArray.find(
-                  (selectedUrl) => selectedUrl == url
-                );
                 links.insertAdjacentHTML(
                   "beforeend",
                   `<li id=${
@@ -382,7 +386,7 @@ window.onload = function () {
       );
     });
     sequenceNumber = sequence;
-    chrome.storage.sync.set({ savedSequenceNumber: sequence });
+    setDataInMemory({ key: "savedSequenceNumber", value: sequence });
     if (primarySearchTag.length) {
       observer.next();
     }
@@ -396,7 +400,10 @@ window.onload = function () {
                 <div>${searchBar.value}</div>
                 </button>`
       );
-      chrome.storage.sync.set({ savedSequenceNumber: sequenceNumber + 1 });
+      setDataInMemory({
+        key: "savedSequenceNumber",
+        value: sequenceNumber + 1,
+      });
       searchBar.value = "";
       sequenceNumber += 1;
       observer.next();
@@ -411,9 +418,15 @@ window.onload = function () {
   });
 
   function clearAllSubscriber() {
-    chrome.storage.sync.set({ primarySearchTag: [] }, function () {
+    function clearMemData() {
       tagBadge.innerHTML = null;
       observer.next();
+    }
+
+    setDataInMemory({
+      key: "primarySearchTag",
+      value: [],
+      callback: clearMemData,
     });
   }
 
