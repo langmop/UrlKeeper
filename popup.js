@@ -30,7 +30,7 @@ window.onload = function () {
       observer,
     };
 
-    getSubscription.call({eventRef: selectedElement}, subscriptionPayload);
+    getSubscription.call({ eventRef: selectedElement }, subscriptionPayload);
   }
 
   var searchBar = document.getElementById("search");
@@ -145,7 +145,7 @@ window.onload = function () {
             `secondary-tag-badge${element}`
           );
 
-          function secondaryAddTagFunction () {
+          function secondaryAddTagFunction() {
             if (secondarySearchBar.value) {
               secondaryTagBadge.insertAdjacentHTML(
                 "beforeend",
@@ -233,7 +233,7 @@ window.onload = function () {
             );
           }
 
-          function updateSecondarySearchBar () {
+          function updateSecondarySearchBar() {
             updateUrlsOnSearch();
           }
 
@@ -278,22 +278,25 @@ window.onload = function () {
                   elementIdentifier: `${url + commonName}`,
                   selectorType: "id",
                   eventName: "click",
-                  observer: function redirectTo () { window.open(hostname + url + suffix) },
+                  observer: function redirectTo() {
+                    window.open(hostname + url + suffix);
+                  },
                 });
 
                 getEventAttached({
                   elementIdentifier: `copyButton${url + commonName}`,
                   selectorType: "id",
                   eventName: "click",
-                  observer: function copyUrl (event) { event.stopPropagation();
+                  observer: function copyUrl(event) {
+                    event.stopPropagation();
                     const copingText = document.getElementById(
                       `link_url${url + commonName}`
                     );
                     navigator.clipboard.writeText(
                       hostname + copingText.textContent + suffix
-                    ); },
+                    );
+                  },
                 });
-
               });
 
             const pageCountPerPage = perPageUrls < 5 ? 5 : perPageUrls;
@@ -317,15 +320,14 @@ window.onload = function () {
                   element + pageCount
                 } ><a class="page-link" href="#">${pageCount + 1}</a></li>`
               );
-              const paginationEventListener = document.getElementById(
-                element + pageCount
-              );
-              const urlObservable$ = Rx.Observable.fromEvent(
-                paginationEventListener,
-                "click"
-              );
-              urlObservable$.subscribe(() => {
-                updateActivePage(pageCount + 1);
+
+              getEventAttached({
+                elementIdentifier: `${element + pageCount}`,
+                selectorType: "id",
+                eventName: "click",
+                observer: function updatePaginationPage() {
+                  updateActivePage(pageCount + 1);
+                },
               });
             }
           }
@@ -352,8 +354,8 @@ window.onload = function () {
     elementIdentifier: "formGroupExampleInput",
     selectorType: "id",
     eventName: "keyup",
-    observer: function customizedHostNameFunc () {
-        hostname = this.eventRef.value || defaultHostname;
+    observer: function customizedHostNameFunc() {
+      hostname = this.eventRef.value || defaultHostname;
     },
   });
 
@@ -361,8 +363,8 @@ window.onload = function () {
     elementIdentifier: "formGroupExampleInput2",
     selectorType: "id",
     eventName: "keyup",
-    observer: function customizedHostNameFunc () {
-        suffix = this.eventRef.value;
+    observer: function customizedHostNameFunc() {
+      suffix = this.eventRef.value;
     },
   });
 
