@@ -141,19 +141,9 @@ window.onload = function () {
             `secondarySearch${element}`
           );
 
-          const secondaryClearAll = document.getElementById(
-            `secondary-clear-all${element}`
-          );
-
-          const secondaryClearAll$ = Rx.Observable.fromEvent(
-            secondaryClearAll,
-            "click"
-          );
-
           const secondaryTagBadge = document.getElementById(
             `secondary-tag-badge${element}`
           );
-
 
           function secondaryAddTagFunction () {
             if (secondarySearchBar.value) {
@@ -202,10 +192,17 @@ window.onload = function () {
               });
             }
 
-            secondaryClearAll$.subscribe(() => {
+            function secondaryClearAllFunction() {
               secondaryTagBadge.innerHTML = null;
               secondarySearchingTags = [];
               updateUrlsOnSearch();
+            }
+
+            getEventAttached({
+              elementIdentifier: `secondary-clear-all${element}`,
+              selectorType: "id",
+              eventName: "click",
+              observer: secondaryClearAllFunction,
             });
 
             const fuse = new Fuse(modifiedSearchArray, secondaryOptions);
