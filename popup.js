@@ -281,22 +281,19 @@ window.onload = function () {
                   observer: function redirectTo () { window.open(hostname + url + suffix) },
                 });
 
-                const copyButtonListener = document.getElementById(
-                  `copyButton${url + commonName}`
-                );
-                const copyButtonObservable$ = Rx.Observable.fromEvent(
-                  copyButtonListener,
-                  "click"
-                );
-                copyButtonObservable$.subscribe((event) => {
-                  event.stopPropagation();
-                  const copingText = document.getElementById(
-                    `link_url${url + commonName}`
-                  );
-                  navigator.clipboard.writeText(
-                    hostname + copingText.textContent + suffix
-                  );
+                getEventAttached({
+                  elementIdentifier: `copyButton${url + commonName}`,
+                  selectorType: "id",
+                  eventName: "click",
+                  observer: function copyUrl (event) { event.stopPropagation();
+                    const copingText = document.getElementById(
+                      `link_url${url + commonName}`
+                    );
+                    navigator.clipboard.writeText(
+                      hostname + copingText.textContent + suffix
+                    ); },
                 });
+
               });
 
             const pageCountPerPage = perPageUrls < 5 ? 5 : perPageUrls;
