@@ -274,15 +274,11 @@ window.onload = function () {
                     </li>`
                 );
 
-                const urlEventListener = document.getElementById(
-                  url + commonName
-                );
-                const urlObservable$ = Rx.Observable.fromEvent(
-                  urlEventListener,
-                  "click"
-                );
-                urlObservable$.subscribe(() => {
-                  window.open(hostname + url + suffix);
+                getEventAttached({
+                  elementIdentifier: `${url + commonName}`,
+                  selectorType: "id",
+                  eventName: "click",
+                  observer: function redirectTo () { window.open(hostname + url + suffix) },
                 });
 
                 const copyButtonListener = document.getElementById(
