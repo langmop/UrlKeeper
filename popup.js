@@ -1,7 +1,7 @@
 window.onload = function () {
   function getSubscription({ eventRef, eventName, observer }) {
     const observable$ = Rx.Observable.fromEvent(eventRef, eventName);
-    observable$.subscribe(observer);
+    observable$.subscribe(observer.bind(this));
   }
 
   function getEventAttached({
@@ -30,7 +30,7 @@ window.onload = function () {
       observer,
     };
 
-    getSubscription(subscriptionPayload);
+    getSubscription.call({eventRef: selectedElement}, subscriptionPayload);
   }
 
   var searchBar = document.getElementById("search");
@@ -90,7 +90,6 @@ window.onload = function () {
         });
 
         const accordian_container = document.getElementById("accordion");
-        const body = document.querySelector("body");
         if (accordian_container) {
           accordian_container.remove();
         }
@@ -141,10 +140,6 @@ window.onload = function () {
           const secondarySearchBar = document.getElementById(
             `secondarySearch${element}`
           );
-          const secondarySearchBar$ = Rx.Observable.fromEvent(
-            secondarySearchBar,
-            "keyup"
-          );
 
           const secondaryClearAll = document.getElementById(
             `secondary-clear-all${element}`
@@ -155,29 +150,27 @@ window.onload = function () {
             "click"
           );
 
-          const secondaryAddTag = document.getElementById(
-            `secondaryAddTag${element}`
-          );
           const secondaryTagBadge = document.getElementById(
             `secondary-tag-badge${element}`
           );
 
-          if (secondaryAddTag) {
-            const secondaryAddTag$ = Rx.Observable.fromEvent(
-              secondaryAddTag,
-              "click"
-            );
 
-            secondaryAddTag$.subscribe(() => {
-              if (secondarySearchBar.value) {
-                secondaryTagBadge.insertAdjacentHTML(
-                  "beforeend",
-                  `<button disabled type="button" class="btn btn-warning secondary-badge">${secondarySearchBar.value}</button>`
-                );
-                secondarySearchBar.value = "";
-              }
-            });
+          function secondaryAddTagFunction () {
+            if (secondarySearchBar.value) {
+              secondaryTagBadge.insertAdjacentHTML(
+                "beforeend",
+                `<button disabled type="button" class="btn btn-warning secondary-badge">${secondarySearchBar.value}</button>`
+              );
+              secondarySearchBar.value = "";
+            }
           }
+
+          getEventAttached({
+            elementIdentifier: `secondaryAddTag${element}`,
+            selectorType: "id",
+            eventName: "click",
+            observer: secondaryAddTagFunction,
+          });
 
           const activeLinks = data.find((temp) => temp.name == element);
           function updateUrlsOnSearch() {
@@ -243,8 +236,15 @@ window.onload = function () {
             );
           }
 
-          secondarySearchBar$.subscribe(() => {
+          function updateSecondarySearchBar () {
             updateUrlsOnSearch();
+          }
+
+          getEventAttached({
+            elementIdentifier: `secondarySearch${element}`,
+            selectorType: "id",
+            eventName: "keyup",
+            observer: updateSecondarySearchBar,
           });
 
           const links = document.getElementById(`links${element}`);
@@ -357,38 +357,31 @@ window.onload = function () {
     },
   };
   const observable$ = Rx.Observable.fromEvent(searchBar, "keyup");
-  const customizedHostName = document.getElementById("formGroupExampleInput");
-  const customizedSuffix = document.getElementById("formGroupExampleInput2");
-  if (customizedHostName) {
-    const customizedHostNameObservable$ = Rx.Observable.fromEvent(
-      customizedHostName,
-      "keyup"
-    );
 
-    customizedHostNameObservable$.subscribe(() => {
-      hostname = customizedHostName.value || defaultHostname;
-    });
-  }
+  getEventAttached({
+    elementIdentifier: "formGroupExampleInput",
+    selectorType: "id",
+    eventName: "keyup",
+    observer: function customizedHostNameFunc () {
+        hostname = this.eventRef.value || defaultHostname;
+    },
+  });
 
-  if (customizedSuffix) {
-    const customizedSuffixObservable$ = Rx.Observable.fromEvent(
-      customizedSuffix,
-      "keyup"
-    );
+  getEventAttached({
+    elementIdentifier: "formGroupExampleInput2",
+    selectorType: "id",
+    eventName: "keyup",
+    observer: function customizedHostNameFunc () {
+        suffix = this.eventRef.value;
+    },
+  });
 
-    customizedSuffixObservable$.subscribe(() => {
-      suffix = customizedSuffix.value;
-    });
-  }
-
-  const addTag = document.getElementById("addTag");
   const tagBadge = document.getElementById("tag-badge");
 
   chrome.storage.sync.get("primarySearchTag", function (storage) {
     const { primarySearchTag = [] } = storage;
     var sequence = sequenceNumber;
     primarySearchTag.map((element) => {
-      console.log(element, "111111");
       tagBadge.insertAdjacentHTML(
         "beforeend",
         `<button id="primaryBadge${sequence++}" disabled type="button" class="d-flex align-items-center btn btn-warning badge">
