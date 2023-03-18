@@ -4,7 +4,7 @@ window.onload = function () {
     observable$.subscribe(observer.bind(this));
   }
 
-  function getEventAttached({
+  function getEventAttached ({
     elementIdentifier,
     selectorType,
     eventName,
@@ -33,8 +33,17 @@ window.onload = function () {
     getSubscription.call({ eventRef: selectedElement }, subscriptionPayload);
   }
 
-  function setDataInMemory({ key, value, callback = () => {} }) {
+  function setDataInMemory ({ key, value, callback = () => {} }) {
     chrome.storage.sync.set({ [key]: value }, callback);
+  }
+
+  function customSearch ({ options, dataSet, searchingTags }) {
+
+    const fuse = new Fuse(dataSet, options);
+
+    return fuse.search({
+      $or: searchingTags,
+    });
   }
 
   function getDataFromMemory({ key, callback = () => {} }) {
@@ -58,312 +67,289 @@ window.onload = function () {
     callback: getSavedSequenceNumber,
   });
 
-  const observer = {
-    next: function (value) {
-      function main(storage) {
-        const { extensionData: data = [] } = storage;
-        const allBadge = document.querySelectorAll(".badge");
-        var searchingTags = [];
+  function onSearchUpdate(storage) {
+    function main(storage) {
+      const { extensionData: data = [] } = storage;
+      const allBadge = document.querySelectorAll(".badge");
+      var searchingTags = [];
 
-        function getPrimarySearchTagData(storage) {
-          const { primarySearchTag = [] } = storage;
-          console.log(storage);
-          searchingTags = primarySearchTag;
-        }
+      function getPrimarySearchTagData(storage) {
+        const { primarySearchTag = [] } = storage;
+        console.log(storage);
+        searchingTags = primarySearchTag;
+      }
 
-        getDataFromMemory({
-          key: "primarySearchTag",
-          callback: getPrimarySearchTagData,
-        });
+      getDataFromMemory({
+        key: "primarySearchTag",
+        callback: getPrimarySearchTagData,
+      });
 
-        if (allBadge) {
-          allBadge.forEach((ele) => {
-            searchingTags.push({
-              name: ele.textContent,
-            });
-          });
-        }
-
-        if (searchBar.value) {
+      if (allBadge) {
+        allBadge.forEach((ele) => {
           searchingTags.push({
-            name: searchBar.value,
+            name: ele.textContent,
           });
-        }
-
-        setDataInMemory({ key: "primarySearchTag", value: searchingTags });
-
-        const options = {
-          useExtendedSearch: true,
-          includeScore: true,
-          keys: ["name"],
-        };
-
-        const possibleResults = data;
-
-        const fuse = new Fuse(possibleResults, options);
-
-        const seached_array = fuse.search({
-          $or: searchingTags,
         });
+      }
 
-        const accordian_container = document.getElementById("accordion");
-        if (accordian_container) {
-          accordian_container.remove();
-        }
+      if (searchBar.value) {
+        searchingTags.push({
+          name: searchBar.value,
+        });
+      }
 
-        const accordianBody = document.getElementById("accordian-body");
+      setDataInMemory({ key: "primarySearchTag", value: searchingTags });
 
-        accordianBody.insertAdjacentHTML(
+      const options = {
+        useExtendedSearch: true,
+        includeScore: true,
+        keys: ["name"],
+      };
+
+      const seached_array = customSearch({ options, dataSet: data, searchingTags });
+
+      const accordian_container = document.getElementById("accordion");
+      if (accordian_container) {
+        accordian_container.remove();
+      }
+
+      const accordianBody = document.getElementById("accordian-body");
+
+      accordianBody.insertAdjacentHTML(
+        "beforeend",
+        '<div class="accordion m-3" id="accordion"></div>'
+      );
+      seached_array.forEach((ele) => {
+        const element = ele.item.name;
+        var p = document.getElementById("accordion");
+        p.insertAdjacentHTML(
           "beforeend",
-          '<div class="accordion m-3" id="accordion"></div>'
-        );
-        seached_array.forEach((ele) => {
-          const element = ele.item.name;
-          var p = document.getElementById("accordion");
-          p.insertAdjacentHTML(
-            "beforeend",
-            `
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading${element}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${element}" aria-expanded="false" aria-controls="collapse${element}">
-                      ${element.replaceAll("-", " ")}
-                    </button>
-                  </h2>
-                  <div id="collapse${element}" class="accordion-collapse collapse" aria-labelledby="heading${element}" data-bs-parent="#accordion">
-                  <div>  
-                  <div class="input-group search m-3 search-container">
-                      <div id="search-div" type="text" class="form-control d-flex" placeholder="Search Common Name"
-                          aria-label="Recipient's username" aria-describedby="basic-addon2">
-                          <div id="secondary-tag-badge${element}" class="d-flex">
-                          </div>
-                          <input id="secondarySearch${element}" type="text" class="form-control shadow-none border-0" placeholder="Search Common Name"
-                          aria-label="Recipient's username" aria-describedby="basic-addon2">
+          `
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="heading${element}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${element}" aria-expanded="false" aria-controls="collapse${element}">
+                  ${element.replaceAll("-", " ")}
+                </button>
+              </h2>
+              <div id="collapse${element}" class="accordion-collapse collapse" aria-labelledby="heading${element}" data-bs-parent="#accordion">
+              <div>  
+              <div class="input-group search m-3 search-container">
+                  <div id="search-div" type="text" class="form-control d-flex" placeholder="Search Common Name"
+                      aria-label="Recipient's username" aria-describedby="basic-addon2">
+                      <div id="secondary-tag-badge${element}" class="d-flex">
                       </div>
-                      <div class="input-group-append">
-                          <span id="secondaryAddTag${element}" class="input-group-text rounded-0 h-100">Add Tag</span>
-                      </div>
-                    </div>
-                    </div>
-                    <button id="secondary-clear-all${element}" class="btn btn-danger clear-all" type="button" > clear </button>
-                    <div class="accordion-body">
-                      <div class="list-group" id="links${element}">
-                      </div>
-                    </div>
+                      <input id="secondarySearch${element}" type="text" class="form-control shadow-none border-0" placeholder="Search Common Name"
+                      aria-label="Recipient's username" aria-describedby="basic-addon2">
+                  </div>
+                  <div class="input-group-append">
+                      <span id="secondaryAddTag${element}" class="input-group-text rounded-0 h-100">Add Tag</span>
                   </div>
                 </div>
-                `
-          );
+                </div>
+                <button id="secondary-clear-all${element}" class="btn btn-danger clear-all" type="button" > clear </button>
+                <div class="accordion-body">
+                  <div class="list-group" id="links${element}">
+                  </div>
+                </div>
+              </div>
+            </div>
+            `
+        );
 
-          const secondarySearchBar = document.getElementById(
-            `secondarySearch${element}`
-          );
+        const secondarySearchBar = document.getElementById(
+          `secondarySearch${element}`
+        );
 
-          const secondaryTagBadge = document.getElementById(
-            `secondary-tag-badge${element}`
-          );
+        const secondaryTagBadge = document.getElementById(
+          `secondary-tag-badge${element}`
+        );
 
-          function secondaryAddTagFunction() {
-            if (secondarySearchBar.value) {
-              secondaryTagBadge.insertAdjacentHTML(
-                "beforeend",
-                `<button disabled type="button" class="btn btn-warning secondary-badge">${secondarySearchBar.value}</button>`
-              );
-              secondarySearchBar.value = "";
-            }
+        function secondaryAddTagFunction() {
+          if (secondarySearchBar.value) {
+            secondaryTagBadge.insertAdjacentHTML(
+              "beforeend",
+              `<button disabled type="button" class="btn btn-warning secondary-badge">${secondarySearchBar.value}</button>`
+            );
+            secondarySearchBar.value = "";
           }
+        }
 
-          getEventAttached({
-            elementIdentifier: `secondaryAddTag${element}`,
-            selectorType: "id",
-            eventName: "click",
-            observer: secondaryAddTagFunction,
+        getEventAttached({
+          elementIdentifier: `secondaryAddTag${element}`,
+          selectorType: "id",
+          eventName: "click",
+          observer: secondaryAddTagFunction,
+        });
+
+        const activeLinks = data.find((temp) => temp.name == element);
+        function updateUrlsOnSearch() {
+          const modifiedSearchArray = activeLinks.urls.map((element) => {
+            return { url: element };
           });
 
-          const activeLinks = data.find((temp) => temp.name == element);
-          function updateUrlsOnSearch() {
-            const modifiedSearchArray = activeLinks.urls.map((element) => {
-              return { url: element };
-            });
+          const secondaryAllBadge =
+            document.querySelectorAll(".secondary-badge");
+          const secondarySearchingTags = [];
 
-            const secondaryAllBadge =
-              document.querySelectorAll(".secondary-badge");
-            const secondarySearchingTags = [];
+          const secondaryOptions = {
+            useExtendedSearch: true,
+            includeScore: true,
+            keys: ["url"],
+          };
 
-            const secondaryOptions = {
-              useExtendedSearch: true,
-              includeScore: true,
-              keys: ["url"],
-            };
-
-            if (secondaryAllBadge) {
-              secondaryAllBadge.forEach((ele) => {
-                secondarySearchingTags.push({
-                  url: ele.textContent,
-                });
-              });
-            }
-
-            if (secondarySearchBar.value) {
+          if (secondaryAllBadge) {
+            secondaryAllBadge.forEach((ele) => {
               secondarySearchingTags.push({
-                url: secondarySearchBar.value,
+                url: ele.textContent,
               });
-            }
-
-            function secondaryClearAllFunction() {
-              secondaryTagBadge.innerHTML = null;
-              secondarySearchingTags = [];
-              updateUrlsOnSearch();
-            }
-
-            getEventAttached({
-              elementIdentifier: `secondary-clear-all${element}`,
-              selectorType: "id",
-              eventName: "click",
-              observer: secondaryClearAllFunction,
             });
-
-            const fuse = new Fuse(modifiedSearchArray, secondaryOptions);
-            const secondarySeachedArray = fuse.search({
-              $or: secondarySearchingTags,
-            });
-
-            const finalSecondarySearch = secondarySeachedArray.map(
-              (element) => element.item.url
-            );
-
-            const modifiedActiveLinks = {
-              ...activeLinks,
-              urls: finalSecondarySearch,
-            };
-
-            if (
-              secondarySearchingTags.length == 0 &&
-              !secondarySearchBar.value
-            ) {
-              modifiedActiveLinks.urls = activeLinks.urls;
-            }
-
-            updateLinkList(
-              modifiedActiveLinks.name,
-              modifiedActiveLinks.urls,
-              activePage
-            );
           }
 
-          function updateSecondarySearchBar() {
+          if (secondarySearchBar.value) {
+            secondarySearchingTags.push({
+              url: secondarySearchBar.value,
+            });
+          }
+
+          function secondaryClearAllFunction() {
+            secondaryTagBadge.innerHTML = null;
+            secondarySearchingTags = [];
             updateUrlsOnSearch();
           }
 
           getEventAttached({
-            elementIdentifier: `secondarySearch${element}`,
+            elementIdentifier: `secondary-clear-all${element}`,
             selectorType: "id",
-            eventName: "keyup",
-            observer: updateSecondarySearchBar,
+            eventName: "click",
+            observer: secondaryClearAllFunction,
           });
 
-          const links = document.getElementById(`links${element}`);
+          const secondarySeachedArray = customSearch({ options: secondaryOptions, dataSet: modifiedSearchArray, searchingTags: secondarySearchingTags });
 
-          function updateLinkList(commonName, linkList, activePage) {
-            links.innerHTML = "";
-            let perPageUrls = parseInt(linkList.length / 5);
-            perPageUrls = perPageUrls < 5 ? 5 : perPageUrls;
-            linkList
-              .slice((activePage - 1) * perPageUrls, activePage * perPageUrls)
-              .forEach((url, index) => {
-                links.insertAdjacentHTML(
-                  "beforeend",
-                  `<li id=${
-                    url + commonName
-                  } href=${url} class="d-inline-flex justify-content-between list-group-item list-group-item-warning accordian_element_url">
-                      <div class="w-100 link_url" id="link_url${
-                        url + commonName
-                      }">
-                        ${url}
-                      </div>
-                      <div id="copyButton${
-                        url + commonName
-                      }" class="w-25 d-inline-flex justify-content-center">
-                        <button type="button" class="btn btn-success">copy</button>
-                      </div>
-                    </li>`
-                );
+          const finalSecondarySearch = secondarySeachedArray.map(
+            (element) => element.item.url
+          );
 
-                getEventAttached({
-                  elementIdentifier: `${url + commonName}`,
-                  selectorType: "id",
-                  eventName: "click",
-                  observer: function redirectTo() {
-                    window.open(hostname + url + suffix);
-                  },
-                });
+          const modifiedActiveLinks = {
+            ...activeLinks,
+            urls: finalSecondarySearch,
+          };
 
-                getEventAttached({
-                  elementIdentifier: `copyButton${url + commonName}`,
-                  selectorType: "id",
-                  eventName: "click",
-                  observer: function copyUrl(event) {
-                    event.stopPropagation();
-                    const copingText = document.getElementById(
-                      `link_url${url + commonName}`
-                    );
-                    navigator.clipboard.writeText(
-                      hostname + copingText.textContent + suffix
-                    );
-                  },
-                });
-              });
+          if (secondarySearchingTags.length == 0 && !secondarySearchBar.value) {
+            modifiedActiveLinks.urls = activeLinks.urls;
+          }
 
-            const pageCountPerPage = perPageUrls < 5 ? 5 : perPageUrls;
+          updateLinkList(
+            modifiedActiveLinks.name,
+            modifiedActiveLinks.urls,
+            activePage
+          );
+        }
 
-            const paginationCount =
-              parseInt(linkList.length / pageCountPerPage) +
-              parseInt(linkList.length % pageCountPerPage == 0 ? 0 : 1);
-            links.insertAdjacentHTML(
-              "beforeend",
-              `<ul class="pagination justify-content-center" id="pagination${element}"></ul>`
-            );
+        function updateSecondarySearchBar() {
+          updateUrlsOnSearch();
+        }
 
-            const paginationNode = document.getElementById(
-              `pagination${element}`
-            );
-            paginationNode.innerHTML = "";
-            for (let pageCount = 0; pageCount < paginationCount; pageCount++) {
-              paginationNode.insertAdjacentHTML(
+        getEventAttached({
+          elementIdentifier: `secondarySearch${element}`,
+          selectorType: "id",
+          eventName: "keyup",
+          observer: updateSecondarySearchBar,
+        });
+
+        const links = document.getElementById(`links${element}`);
+
+        function updateLinkList(commonName, linkList, activePage) {
+          links.innerHTML = "";
+          let perPageUrls = parseInt(linkList.length / 5);
+          perPageUrls = perPageUrls < 5 ? 5 : perPageUrls;
+          linkList
+            .slice((activePage - 1) * perPageUrls, activePage * perPageUrls)
+            .forEach((url, index) => {
+              links.insertAdjacentHTML(
                 "beforeend",
-                `<li class="page-item" id=${
-                  element + pageCount
-                } ><a class="page-link" href="#">${pageCount + 1}</a></li>`
+                `<li id=${
+                  url + commonName
+                } href=${url} class="d-inline-flex justify-content-between list-group-item list-group-item-warning accordian_element_url">
+                  <div class="w-100 link_url" id="link_url${url + commonName}">
+                    ${url}
+                  </div>
+                  <div id="copyButton${
+                    url + commonName
+                  }" class="w-25 d-inline-flex justify-content-center">
+                    <button type="button" class="btn btn-success">copy</button>
+                  </div>
+                </li>`
               );
 
               getEventAttached({
-                elementIdentifier: `${element + pageCount}`,
+                elementIdentifier: `${url + commonName}`,
                 selectorType: "id",
                 eventName: "click",
-                observer: function updatePaginationPage() {
-                  updateActivePage(pageCount + 1);
+                observer: function redirectTo() {
+                  window.open(hostname + url + suffix);
                 },
               });
-            }
-          }
-          var activePage = 1;
 
-          const updateActivePage = function (pageNumber) {
-            activePage = pageNumber;
-            updateUrlsOnSearch();
-          };
+              getEventAttached({
+                elementIdentifier: `copyButton${url + commonName}`,
+                selectorType: "id",
+                eventName: "click",
+                observer: function copyUrl(event) {
+                  event.stopPropagation();
+                  const copingText = document.getElementById(
+                    `link_url${url + commonName}`
+                  );
+                  navigator.clipboard.writeText(
+                    hostname + copingText.textContent + suffix
+                  );
+                },
+              });
+            });
+
+          const pageCountPerPage = perPageUrls < 5 ? 5 : perPageUrls;
+
+          const paginationCount =
+            parseInt(linkList.length / pageCountPerPage) +
+            parseInt(linkList.length % pageCountPerPage == 0 ? 0 : 1);
+          links.insertAdjacentHTML(
+            "beforeend",
+            `<ul class="pagination justify-content-center" id="pagination${element}"></ul>`
+          );
+
+          const paginationNode = document.getElementById(
+            `pagination${element}`
+          );
+          paginationNode.innerHTML = "";
+          for (let pageCount = 0; pageCount < paginationCount; pageCount++) {
+            paginationNode.insertAdjacentHTML(
+              "beforeend",
+              `<li class="page-item" id=${
+                element + pageCount
+              } ><a class="page-link" href="#">${pageCount + 1}</a></li>`
+            );
+
+            getEventAttached({
+              elementIdentifier: `${element + pageCount}`,
+              selectorType: "id",
+              eventName: "click",
+              observer: function updatePaginationPage() {
+                updateActivePage(pageCount + 1);
+              },
+            });
+          }
+        }
+        var activePage = 1;
+
+        const updateActivePage = function (pageNumber) {
+          activePage = pageNumber;
           updateUrlsOnSearch();
-        });
-      }
-      getDataFromMemory({ key: "extensionData", callback: main });
-    },
-    error: function (err) {
-      console.error(err);
-    },
-    complete: function () {
-      console.log("Completed");
-    },
-  };
-  const observable$ = Rx.Observable.fromEvent(searchBar, "keyup");
+        };
+        updateUrlsOnSearch();
+      });
+    }
+    getDataFromMemory({ key: "extensionData", callback: main });
+  }
 
   getEventAttached({
     elementIdentifier: "formGroupExampleInput",
@@ -399,7 +385,7 @@ window.onload = function () {
     sequenceNumber = sequence;
     setDataInMemory({ key: "savedSequenceNumber", value: sequence });
     if (primarySearchTag.length) {
-      observer.next();
+      onSearchUpdate();
     }
   }
 
@@ -422,7 +408,7 @@ window.onload = function () {
       });
       searchBar.value = "";
       sequenceNumber += 1;
-      observer.next();
+      onSearchUpdate();
     }
   }
 
@@ -436,7 +422,7 @@ window.onload = function () {
   function clearAllSubscriber() {
     function clearMemData() {
       tagBadge.innerHTML = null;
-      observer.next();
+      onSearchUpdate();
     }
 
     setDataInMemory({
@@ -453,5 +439,10 @@ window.onload = function () {
     observer: clearAllSubscriber,
   });
 
-  observable$.subscribe(observer);
+  getEventAttached({
+    elementIdentifier: "search",
+    selectorType: "id",
+    eventName: "keyup",
+    observer: onSearchUpdate,
+  });
 };
