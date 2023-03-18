@@ -1,0 +1,75 @@
+.search {
+    width: 600px !important;
+}
+
+.accordian_element_url {
+    cursor: pointer;
+}
+
+.link_url {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.accordion {
+    width: 600px !important;
+}
+
+.pagination {
+    margin-top: 12px;
+}
+
+.checkbox {
+    width: 20px;
+}
+
+.advanced-setting {
+    float: right;
+    margin-right: 16px;
+    margin-bottom: 10px;
+    color: darkblue;
+    text-decoration: underline;
+}
+
+.clear-all {
+    margin-left: 16px;
+    margin-bottom: 10px;
+    color: white;
+    text-decoration: underline;
+}
+
+.advanced-setting-div {
+    height: 50px;
+}
+
+.collapse {
+    border: none;
+}
+
+.badge {
+    margin-left: 10px;
+}
+
+.secondary-badge {
+    margin-left: 10px;
+}
+
+.search-container {
+    max-width: 564px !important;
+}
+
+.accordion-body {
+    max-height: 400px !important;
+    overflow: auto;
+}
+
+
+.cross{
+    margin-left: 10px;
+    border-radius: 4px;
+    background-color: white;
+    padding: 4px;
+    height: 30px;
+    width: 20px;
+}
