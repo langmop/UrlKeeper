@@ -4,7 +4,7 @@ window.onload = function () {
     observable$.subscribe(observer.bind(this));
   }
 
-  function getEventAttached ({
+  function getEventAttached({
     elementIdentifier,
     selectorType,
     eventName,
@@ -33,12 +33,11 @@ window.onload = function () {
     getSubscription.call({ eventRef: selectedElement }, subscriptionPayload);
   }
 
-  function setDataInMemory ({ key, value, callback = () => {} }) {
+  function setDataInMemory({ key, value, callback = () => {} }) {
     chrome.storage.sync.set({ [key]: value }, callback);
   }
 
-  function customSearch ({ options, dataSet, searchingTags }) {
-
+  function customSearch({ options, dataSet, searchingTags }) {
     const fuse = new Fuse(dataSet, options);
 
     return fuse.search({
@@ -50,9 +49,18 @@ window.onload = function () {
     chrome.storage.sync.get(key, callback);
   }
 
+  var hostname;
   var searchBar = document.getElementById("search");
-  const defaultHostname = "https://www-latest.practo.com/";
-  var hostname = defaultHostname;
+
+  getDataFromMemory({
+    key: "defaultHostname",
+    callback: function getDefaultHostname(storage) {
+      const { defaultHostname = "" } = storage;
+      hostname = defaultHostname;
+      const hostnameElement = document.getElementById("formGroupExampleInput");
+      hostnameElement.value = hostname;
+    },
+  });
   var suffix = "";
 
   var sequenceNumber;
@@ -75,7 +83,6 @@ window.onload = function () {
 
       function getPrimarySearchTagData(storage) {
         const { primarySearchTag = [] } = storage;
-        console.log(storage);
         searchingTags = primarySearchTag;
       }
 
@@ -106,7 +113,11 @@ window.onload = function () {
         keys: ["name"],
       };
 
-      const seached_array = customSearch({ options, dataSet: data, searchingTags });
+      const seached_array = customSearch({
+        options,
+        dataSet: data,
+        searchingTags,
+      });
 
       const accordian_container = document.getElementById("accordion");
       if (accordian_container) {
@@ -182,7 +193,7 @@ window.onload = function () {
         });
 
         const activeLinks = data.find((temp) => temp.name == element);
-        function updateUrlsOnSearch() {
+        function updateUrlsOnSearch(onSearch = false , onPageChange = true ) {
           const modifiedSearchArray = activeLinks.urls.map((element) => {
             return { url: element };
           });
@@ -224,7 +235,13 @@ window.onload = function () {
             observer: secondaryClearAllFunction,
           });
 
-          const secondarySeachedArray = customSearch({ options: secondaryOptions, dataSet: modifiedSearchArray, searchingTags: secondarySearchingTags });
+
+
+          const secondarySeachedArray = customSearch({
+            options: secondaryOptions,
+            dataSet: modifiedSearchArray,
+            searchingTags: secondarySearchingTags,
+          });
 
           const finalSecondarySearch = secondarySeachedArray.map(
             (element) => element.item.url
@@ -242,12 +259,14 @@ window.onload = function () {
           updateLinkList(
             modifiedActiveLinks.name,
             modifiedActiveLinks.urls,
-            activePage
+            activePage,
+            onSearch,
+            onPageChange
           );
         }
 
         function updateSecondarySearchBar() {
-          updateUrlsOnSearch();
+          updateUrlsOnSearch(true);
         }
 
         getEventAttached({
@@ -259,9 +278,10 @@ window.onload = function () {
 
         const links = document.getElementById(`links${element}`);
 
-        function updateLinkList(commonName, linkList, activePage) {
+        function updateLinkList(commonName, linkList, activePage, onSearch) {
           links.innerHTML = "";
           let perPageUrls = parseInt(linkList.length / 5);
+          activePage = onSearch ? 1 : activePage;
           perPageUrls = perPageUrls < 5 ? 5 : perPageUrls;
           linkList
             .slice((activePage - 1) * perPageUrls, activePage * perPageUrls)
@@ -356,7 +376,8 @@ window.onload = function () {
     selectorType: "id",
     eventName: "keyup",
     observer: function customizedHostNameFunc() {
-      hostname = this.eventRef.value || defaultHostname;
+      hostname = this.eventRef.value || hostname;
+      setDataInMemory({key: 'defaultHostname', value: hostname});
     },
   });
 
