@@ -33,12 +33,12 @@ window.onload = function () {
     getSubscription.call({ eventRef: selectedElement }, subscriptionPayload);
   }
 
-  function setDataInMemory ({ key, value, callback = () => {} }) {
+  function setDataInMemory({ key, value, callback = () => {} }) {
     chrome.storage.sync.set({ [key]: value }, callback);
   }
 
-  function getDataFromMemory () {
-    
+  function getDataFromMemory({ key, callback = () => {} }) {
+    chrome.storage.sync.get(key, callback);
   }
 
   var searchBar = document.getElementById("search");
@@ -48,22 +48,32 @@ window.onload = function () {
 
   var sequenceNumber;
 
-  chrome.storage.sync.get("savedSequenceNumber", function (storage) {
+  function getSavedSequenceNumber(storage) {
     const { savedSequenceNumber = 1 } = storage;
     sequenceNumber = savedSequenceNumber;
+  }
+
+  getDataFromMemory({
+    key: "savedSequenceNumber",
+    callback: getSavedSequenceNumber,
   });
 
   const observer = {
     next: function (value) {
-      chrome.storage.sync.get("extensionData", function (storage) {
+      function main(storage) {
         const { extensionData: data = [] } = storage;
         const allBadge = document.querySelectorAll(".badge");
         var searchingTags = [];
 
-        chrome.storage.sync.get("primarySearchTag", function (storage) {
+        function getPrimarySearchTagData(storage) {
           const { primarySearchTag = [] } = storage;
           console.log(storage);
           searchingTags = primarySearchTag;
+        }
+
+        getDataFromMemory({
+          key: "primarySearchTag",
+          callback: getPrimarySearchTagData,
         });
 
         if (allBadge) {
@@ -343,7 +353,8 @@ window.onload = function () {
           };
           updateUrlsOnSearch();
         });
-      });
+      }
+      getDataFromMemory({ key: "extensionData", callback: main });
     },
     error: function (err) {
       console.error(err);
@@ -374,7 +385,7 @@ window.onload = function () {
 
   const tagBadge = document.getElementById("tag-badge");
 
-  chrome.storage.sync.get("primarySearchTag", function (storage) {
+  function getPrimaryTagFromMemory(storage) {
     const { primarySearchTag = [] } = storage;
     var sequence = sequenceNumber;
     primarySearchTag.map((element) => {
@@ -390,6 +401,11 @@ window.onload = function () {
     if (primarySearchTag.length) {
       observer.next();
     }
+  }
+
+  getDataFromMemory({
+    key: "primarySearchTag",
+    callback: getPrimaryTagFromMemory,
   });
 
   function addTagtoPrimarySearch() {
