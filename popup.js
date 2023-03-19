@@ -99,13 +99,13 @@ window.onload = function () {
         });
       }
 
+      setDataInMemory({ key: "primarySearchTag", value: searchingTags });
+
       if (searchBar.value) {
         searchingTags.push({
           name: searchBar.value,
         });
       }
-
-      setDataInMemory({ key: "primarySearchTag", value: searchingTags });
 
       const options = {
         useExtendedSearch: true,
