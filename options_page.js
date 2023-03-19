@@ -49,19 +49,19 @@ window.onload = function () {
         const bulkUpload = bulkUploadNode.value;
         if (bulkUpload) {
           var bulkUploaderElement = JSON.parse(bulkUpload);
-          console.log(localExtensionData);
         }
 
         try {
-          console.log(bulkUploaderElement);
           var validatedJson = YomJsonValidator.validate(schema, {
-            extensionData: [bulkUploaderElement],
+            extensionData: bulkUploaderElement,
           });
 
           validatedJson = [
             ...localExtensionData,
             ...validatedJson.extensionData,
           ];
+
+
 
           const strippedData = {};
 
@@ -80,8 +80,6 @@ window.onload = function () {
               urls: value,
             };
           });
-
-          console.log(validatedJson);
 
           chrome.storage.sync.set({
             extensionData: validatedJson,
